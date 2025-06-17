@@ -134,21 +134,20 @@ app.delete('/api/categories/:id', (req, res) => {
   });
 });
 
-// image upload
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, '../src/assets/');  // Simpan gambar di folder src/assets
+    cb(null, path.join(__dirname, '../public/assets')); // Pastikan folder ini ada
   },
   filename: (req, file, cb) => {
-    const productName = req.body.name || 'produk'; // fallback jika tidak ada nama
-    // Ganti spasi dan karakter khusus, lalu tambahkan ekstensi asli
-    const safeName = productName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9\-]/g, '');
-    const fileName = `${safeName}${path.extname(file.originalname)}`;
-    cb(null, fileName);
-  }  
+    // Ambil nama produk dari form (pastikan 'name' ada sebelum ini dipanggil)
+    const productName = req.body.name || 'produk'; // fallback
+    const ext = path.extname(file.originalname); // contoh: .jpg
+    const cleanName = productName.replace(/\s+/g, '_').toLowerCase(); // bersihkan nama
+    cb(null, `${cleanName}${ext}`);
+  }
 });
 
-const upload = multer({ storage: storage });
+const upload = multer({ storage });
 
 app.get('/api/produk', (req, res) => {
   const sql = `
@@ -188,31 +187,36 @@ app.get('/api/products/:id', (req, res) => {
 // POST Menambah produk baru (dengan stock dan upload gambar opsional)
 app.post('/api/products', upload.single('image'), (req, res) => {
   const { name, price, description, category_id, stock } = req.body;
-  const image_url = req.file ? req.file.filename : null; // Gambar opsional
 
-  // Validasi dasar (sesuaikan dengan kebutuhan Anda)
+  // Validasi dasar
   if (!name || !price || !category_id) {
     return res.status(400).json({ message: 'Nama produk, harga, dan kategori wajib diisi.' });
   }
 
-  // Validasi dan parsing untuk stock
-  let stockValue = parseInt(stock, 10);
-  if (isNaN(stockValue) || stockValue < 0) {
-    stockValue = 0; // Default ke 0 jika tidak valid atau tidak diisi
-  }
-
-  // Validasi dan parsing untuk price dan category_id
+  // Validasi dan parsing nilai
   const priceValue = parseFloat(price);
   const categoryIdValue = parseInt(category_id, 10);
+  let stockValue = parseInt(stock, 10);
 
   if (isNaN(priceValue) || priceValue < 0) {
     return res.status(400).json({ message: 'Harga tidak valid.' });
   }
+
   if (isNaN(categoryIdValue)) {
     return res.status(400).json({ message: 'ID Kategori tidak valid.' });
   }
 
-  const sql = 'INSERT INTO products (name, price, description, image_url, category_id, stock) VALUES (?, ?, ?, ?, ?, ?)';
+  if (isNaN(stockValue) || stockValue < 0) {
+    stockValue = 0;
+  }
+
+  // Nama file gambar dari multer (kalau ada)
+  const image_url = req.file ? req.file.filename : null;
+
+  const sql = `
+    INSERT INTO products (name, price, description, image_url, category_id, stock)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `;
   db.query(sql, [name, priceValue, description, image_url, categoryIdValue, stockValue], (err, result) => {
     if (err) {
       console.error("Error saat menambah produk:", err);
@@ -222,7 +226,46 @@ app.post('/api/products', upload.single('image'), (req, res) => {
   });
 });
 
-// PUT Update products (dengan upload gambar)
+
+app.put('/api/products/:id', upload.single('image'), (req, res) => {
+  const productId = req.params.id;
+  const { name, price, description, category_id, existingImage } = req.body;
+
+  if (!name || !price || !category_id) {
+    return res.status(400).json({ message: 'Nama produk, harga, dan kategori wajib diisi.' });
+  }
+
+  const priceValue = parseFloat(price);
+  const categoryIdValue = parseInt(category_id, 10);
+  if (isNaN(priceValue) || priceValue < 0) {
+    return res.status(400).json({ message: 'Harga tidak valid.' });
+  }
+  if (isNaN(categoryIdValue)) {
+    return res.status(400).json({ message: 'ID Kategori tidak valid.' });
+  }
+
+  const image_url = req.file ? req.file.filename : existingImage; // Pakai upload baru atau gambar lama
+
+  const sql = `
+    UPDATE products
+    SET name = ?, price = ?, description = ?, image_url = ?, category_id = ?
+    WHERE id = ?
+  `;
+  db.query(sql, [name, priceValue, description, image_url, categoryIdValue, productId], (err, result) => {
+    if (err) {
+      console.error("Gagal update produk:", err);
+      return res.status(500).json({ error: err.message });
+    }
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: 'Produk tidak ditemukan.' });
+    }
+
+    res.json({ message: 'Produk berhasil diperbarui' });
+  });
+});
+
+
 // Di backend Express.js Anda:
 
 app.put('/api/products/:id/stock', (req, res) => { // Dihilangkan async jika tidak ada await di dalam selain db.query callback

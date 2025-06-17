@@ -56,7 +56,7 @@ const Produk = () => {
     // Asumsi backend menyajikan gambar dari folder 'uploads' di root server API
     // atau dari folder public jika frontend dan backend satu origin.
     // Sesuaikan path ini! Jika gambar di 'public/uploads', pathnya bisa jadi '/uploads/namafile.jpg'
-    return `http://localhost:3001/assets/${imageName}`; 
+    return `/assets/${imageName}`; 
   };
 
   return (

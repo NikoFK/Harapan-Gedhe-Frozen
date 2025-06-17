@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import ImgBebek from '../assets/bebek.jpeg';
+const ImgBebek = '/assets/bebek.jpeg'; // tanpa import
 
 function Home({user, updateCartCount}) {
   const navigate = useNavigate();
@@ -90,7 +90,7 @@ function Home({user, updateCartCount}) {
           backgroundImage: `url(${ImgBebek})`,
           backgroundSize: 'cover',
           backgroundPosition: 'center',
-          height: '440px'
+          height: '600px'
         }}
       >
         <div

@@ -23,8 +23,7 @@ const EditProduct = () => {
           axios.get('http://localhost:3001/api/categories'),
         ]);
         const product = productRes.data;
-console.log(productRes.data);
-console.log(existingImage);
+
         setForm({
           name: product.name,
           price: product.price,
@@ -33,7 +32,7 @@ console.log(existingImage);
           category_id: product.category_id,
         });
 
-        setExistingImage(product.image_url);
+        setExistingImage(product.image_url); // pastikan ini hanya nama file
         setCategories(categoryRes.data);
       } catch (err) {
         console.error(err);
@@ -43,10 +42,11 @@ console.log(existingImage);
   }, [id]);
 
   const handleChange = (e) => {
-    if (e.target.name === 'image') {
-      setForm({ ...form, image: e.target.files[0] });
+    const { name, value, files } = e.target;
+    if (name === 'image') {
+      setForm({ ...form, image: files[0] });
     } else {
-      setForm({ ...form, [e.target.name]: e.target.value });
+      setForm({ ...form, [name]: value });
     }
   };
 
@@ -62,13 +62,14 @@ console.log(existingImage);
       if (form.image) {
         data.append('image', form.image);
       } else {
-        data.append('existingImage', existingImage); // untuk tetap pakai gambar lama
-      }
+        data.append('existingImage', existingImage);
+      }      
 
       await axios.put(`http://localhost:3001/api/products/${id}`, data);
       navigate('/admin/produk');
     } catch (err) {
       console.error(err);
+      alert('Gagal update produk');
     }
   };
 
@@ -112,7 +113,8 @@ console.log(existingImage);
           {existingImage && (
             <div className="mb-2">
               <img
-                src={`../../../src/assets/${existingImage}`}
+                src={`/assets/${existingImage}`}
+                // Pastikan backend expose folder gambar
                 alt="Produk"
                 style={{ width: '100px', height: 'auto' }}
               />
