@@ -1,7 +1,7 @@
 const express = require('express');
 const mysql = require('mysql2');
 const cors = require('cors');
-const multer = require('multer');  // Pastikan baris ini ada!
+const multer = require('multer');
 const path = require('path');
 
 const app = express();
@@ -11,10 +11,11 @@ app.use(cors());
 app.use(express.json());
 
 const db = mysql.createConnection({
-  host: 'localhost',
+  host: '127.0.0.1',
   user: 'root',
-  password: '',
-  database: 'db_harapan_gedhe_frozen'
+  password: 'root',
+  database: 'db_harapan_gedhe_frozen',
+  port: 8889 // Port MySQL MAMP
 });
 
 // Get all categories
